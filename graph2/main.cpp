@@ -7,15 +7,16 @@ int main()
 {
     int e, v;
     cin >> v >> e;
-    input(e, v);
-    printAdjacent(e, v);
+    graph g(e, v);
+    g.inputUndirected();
+    g.printAdjacent();
     // graphTraverse(DFS, v);
-    cout << "cycle: " << hasCycle(v) << "\n"
-         << "bipartite: " << isBipartite(v) << "\n"
-         << "connected: " << isConnectedUndirected(v) << "\n"
+    cout << "cycle: " << g.hasCycleUndirected() << "\n"
+         << "bipartite: " << g.isBipartite() << "\n"
+         << "connected: " << g.isConnectedUndirected() << "\n"
          << "components: \n";
-    printConnectedComponentUndirected(v);
-    cout << "topological sort: ";
-    topoSort(v);
+    g.printConnectedComponentUndirected();
+    // cout << "topological sort: ";
+    // g.topoSort();
     return 0;
 }
