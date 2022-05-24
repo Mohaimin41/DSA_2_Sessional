@@ -357,6 +357,25 @@ public:
     bool isConnectedUndirected()
     {
         for (int i = 1; i <= ver; i++)
+            visited1[i] = false;
+
+        dfs1(1);
+
+        int c = 0;
+
+        for (int i = 1; i <= ver; i++)
+            if (visited1[i])
+                c++;
+
+        if (c == ver)
+            return true;
+        else
+            return false;
+    }
+
+    bool isConnectedDirected()
+    {
+        for (int i = 1; i <= ver; i++)
             visited1[i] = visited2[i] = false;
 
         // run dfs at vertex 1 from original graph and reverse direction graph
