@@ -5,6 +5,7 @@
 #include <climits>
 
 #define INF INT_MAX
+#define MAX_VER 1000
 #define mp(a, b) std::make_pair(a, b)
 #define edge_dec std::pair<int, int>
 
@@ -17,7 +18,7 @@ enum algo
 class graph
 {
     // adjacency list, array of vector of <next vertex, weight of this edge>
-    std::vector<std::pair<int, double>> *Gr;
+    std::vector<std::pair<int, double>> Gr[MAX_VER];
 
     // graph edge list, <weight, edge: a pair of vertices>
     std::vector<std::pair<double, edge_dec>> gr;
@@ -27,13 +28,13 @@ class graph
 
     // using 0 indexed vertex numbering, V vertex: 0 to V-1 number
     // parent array, defines which set currently the vertice belongs to, initialized as own set only
-    int *par;
+    int par[MAX_VER];
 
     // vistitation arr for Prim's
-    bool *isVisited;
+    bool isVisited[MAX_VER];
 
     // key arr for Prim's
-    double *key;
+    double key[MAX_VER];
 
     // num of nodes
     int V;
@@ -72,26 +73,13 @@ public:
     {
         this->V = V;
 
-        Gr = new std::vector<std::pair<int, double>>[V];
-        key = new double[V];
-        par = new int[V];
-        isVisited = new bool[V];
-
         // MAKE_SET step, O(V), also  isVisited
         init();
 
         gr.clear();
     }
 
-    ~graph()
-    {
-        delete[] key;
-        delete[] par;
-        delete[] isVisited;
-        delete[] Gr;
-    }
-
-    void addEdge(int u, int v, int weight)
+    void addEdge(int u, int v, double weight)
     {
         gr.push_back(mp(weight, mp(u, v)));
         Gr[u].push_back(mp(v, weight));
@@ -101,19 +89,23 @@ public:
     void mst_kruskal()
     {
         init();
+
         // sorting the edge list by weight in ascending order, O(E log E)
         std::sort(gr.begin(), gr.end());
 
         // iterate through all edge, O(E)
-        for (int i = 0; i < gr.size(); i++)
+        int sz = gr.size();
+
+        for (int i = 0; i < sz; i++)
         {
             int u = gr[i].second.first, v = gr[i].second.second;
 
             // if not in same tree/set, find_set O(V)
             if (FIND_SET(u) != FIND_SET(v))
             {
-                kruskal_tr.push_back(mp(gr[i].first, mp(u, v)));
-                UNION_VER(u, v);
+                kruskal_tr.push_back(mp(gr[i].first, mp(u, v))); //add to mst
+                //join this two sets or make their parents same
+                UNION_VER(FIND_SET(u), FIND_SET(v)); 
             }
         }
     }
@@ -133,9 +125,9 @@ public:
         pq.push(mp(0, 0));
         key[0] = 0;
 
-        //this is executed till all vertices have been pushed then popped or V times
-        //with O(lg V) extraction, O(V lg V)
-        // sum total = O(V lg V) + O(E lg V)
+        // this is executed till all vertices have been pushed then popped or V times
+        // with O(lg V) extraction, O(V lg V)
+        //  sum total = O(V lg V) + O(E lg V)
         while (!pq.empty())
         {
             // extract top/min keyed vertex u, O(lg V)
@@ -177,8 +169,8 @@ public:
         if (a == KRUSKAL)
         {
             mst_kruskal();
-
-            for (int i = 0; i < kruskal_tr.size(); i++)
+            int sz = kruskal_tr.size();
+            for (int i = 0; i < sz; i++)
                 res += kruskal_tr[i].first;
         }
         else
@@ -199,10 +191,11 @@ public:
             mst_kruskal();
             std::cout << "List of edges selected by Kruskal's: {";
 
-            for (int i = 0; i < kruskal_tr.size(); i++)
+            int sz = kruskal_tr.size();
+            for (int i = 0; i < sz; i++)
             {
                 std::cout << "(" << kruskal_tr[i].second.first << "," << kruskal_tr[i].second.second << ")";
-                if (i < kruskal_tr.size() - 1)
+                if (i < sz - 1)
                     std::cout << ",";
             }
 
@@ -220,6 +213,8 @@ public:
                 if (i < V - 1)
                     std::cout << ",";
             }
+
+            std::cout << "}";
         }
     }
 };

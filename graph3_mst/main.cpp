@@ -5,7 +5,7 @@
 int main()
 {
     //file input part
-    std::ifstream inputFileStream("mst.txt", std::ios::in);
+    std::ifstream inputFileStream("mst1.txt", std::ios::in);
     
     int ver, edge;
     inputFileStream >> ver >> edge;
@@ -30,7 +30,7 @@ int main()
     inputFileStream.close();
     
 
-    std::cout << "Cost of the minimum spanning tree: " << t.cost_mst(PRIM) << "\n";
+    std::cout << "Cost of the minimum spanning tree: " << t.cost_mst(KRUSKAL) << "\n";
     t.print_mst(PRIM);
     std::cout << "\n";
     t.print_mst(KRUSKAL);
