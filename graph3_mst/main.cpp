@@ -32,5 +32,7 @@ int main()
 
     std::cout << "Cost of the minimum spanning tree: " << t.cost_mst(PRIM) << "\n";
     t.print_mst(PRIM);
+    std::cout << "\n";
+    t.print_mst(KRUSKAL);
     return 0;
 }
