@@ -178,20 +178,17 @@ void graph::dijkstra(int src)
     Initilization(src);
 
     // min priority queue of  <distance, vertex>
-    std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int>>,
-                        std::greater<std::pair<int, int>>>
-        pq;
+    // access: pq.top().second = vertex, .first = distance to that vertex from src;
+    // always the least distanced vertex from source will be at top
+    std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int>>, std::greater<std::pair<int, int>>> pq;
 
     // solution set/stack/array/vector/queue s
-    std::vector<int> solution;
-    
-    // fill queue, O(V (total vertex)) 
-    for (int i = 0;i < ver; i++)
-    {
-        pq.push(mp(dist[i], i));
-    }
+    // std::vector<int> solution;
 
-    // total V times while loop iterates
+    // src in queue
+    pq.push(mp(dist[src], src));
+
+    // total V times the while loop iterates
     while (!pq.empty())
     {
         // O(lg V)
@@ -199,16 +196,24 @@ void graph::dijkstra(int src)
         pq.pop();
 
         // insert u in solution
-        solution.push_back(u);
+        // solution.push_back(u);
 
-        // iterate of all adjacents, relax the edges going to adjacents from u
-        // directed graph, total E times for loop iterates
-        for (auto vertex: adj_list[u])
+        // iterate over all adjacents, relax the edges going to adjacents from u
+        // directed graph, in total E times for loop iterates
+        // each edge is relaxed and pushed to queue if allowed
+        for (auto vertex : adj_list[u])
         {
-            Relax(u, vertex.first, vertex.second);
+            // relaxation step, and we update pq too
+            int v = vertex.first, w = vertex.second;
+            if (dist[u] != INF && dist[v] > dist[u] + w)
+            {
+                // this edge can be relaxed and the vertex v can be put in queue
+                dist[v] = dist[u] + w;
+                predecessor[v] = u;
+                pq.push(mp(dist[v], v));
+            }
         }
     }
-    
 }
 
 /*

@@ -1,25 +1,29 @@
+#include <fstream>
 #include "graph.h"
 
 using namespace std;
 
 int main()
 {
+    //file input part
+    std::ifstream inputFileStream("input.txt", std::ios::in);
+
     int v, e, source, dest;
     bool has_neg = false;
-    cin >> v >> e;
+    inputFileStream >> v >> e;
     graph t(v, e);
     for (int i = 0; i < e; i++)
     {
         int u, v, w;
-        cin >> u >> v >> w;
+        inputFileStream >> u >> v >> w;
         if (w < 0)
             has_neg = true;
         t.add_edge(u, v, w);
     }
 
-    cin >> source >> dest;
+    inputFileStream >> source >> dest;
 
-    if (has_neg)
+    if (!has_neg)
     {
         t.dijkstra(source);
         cout << "Shortest path cost: " << t.cost(source, dest, DIJKSTRA) << "\n";
@@ -39,6 +43,10 @@ int main()
     }
 
     // t.print_vector_adjList();
-    t.print_shortest_path_data(source, dest, BELLMAN_FORD);
+    // t.print_shortest_path_data(source, dest, BELLMAN_FORD);
+
+    // close file
+    inputFileStream.close();
+
     return 0;
 }
