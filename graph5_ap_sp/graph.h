@@ -241,13 +241,14 @@ public:
 
     void print_allPair_SP(algo a)
     {
+        std::cout << "Shortest Distance Path";
         if (a == FLOYD_WARSHAL)
         {
             floyd_warshal();
             for (int i = 0; i < ver; i++)
             {
                 for (int j = 0; j < ver; j++)
-                    std::cout << D_old[i][j] << " \t";
+                    D_old[i][j] == INF ? std::cout << "INF \t" : std::cout << D_old[i][j] << " \t";
                 std::cout << "\n";
             }
         }
@@ -258,7 +259,7 @@ public:
             for (int i = 0; i < ver; i++)
             {
                 for (int j = 0; j < ver; j++)
-                    std::cout << D_new[i][j] << " \t";
+                    D_new[i][j] == INF ? std::cout << "INF \t" : std::cout << D_new[i][j] << " \t";
                 std::cout << "\n";
             }
         }
