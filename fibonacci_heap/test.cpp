@@ -28,16 +28,16 @@ int main()
 
     if (!has_neg)
     {
-        t.dijkstra(source, BINARY);
+        t.dijkstra(source, FIBONACCI);
         // t.print_vector_adjList();
-        // t.print_shortest_path_data(source, dest, DIJKSTRA, BINARY);
+        t.print_shortest_path_data(source, dest, DIJKSTRA, FIBONACCI);
 
-        cout << "Shortest path cost: " << t.cost(source, dest, DIJKSTRA, BINARY) << "\n";
-        t.print_path(source, dest, DIJKSTRA, BINARY);
+        cout << "Shortest path cost: " << t.cost(source, dest, DIJKSTRA, FIBONACCI) << "\n";
+        t.print_path(source, dest, DIJKSTRA, FIBONACCI);
     }
 
     // t.print_vector_adjList();
-    // t.print_shortest_path_data(source, dest, DIJKSTRA, BINARY);
+    // t.print_shortest_path_data(source, dest, DIJKSTRA, FIBONACCI);
 
     // close file
     inputFileStream.close();

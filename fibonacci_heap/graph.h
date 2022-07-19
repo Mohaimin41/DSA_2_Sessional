@@ -43,7 +43,10 @@ private:
     int predecessor[MAX_VER];
     int dist[MAX_VER];
 
-    /* @brief   dist and predecessor set to infinity and -1, dist[src] to 0
+    /* heap node list, used to pass the node to decrease key in fibonacci heap */
+    fibonacci_heap::node *ndList[MAX_VER];
+
+    /* @brief   dist, predecessor and ndList set to infinity, -1 and nullptr, dist[src] to 0
      * @param   src     source vertex for shortest path
      */
     void Initilization(int src)
@@ -52,6 +55,7 @@ private:
         {
             dist[i] = INF;
             predecessor[i] = -1;
+            ndList[i] = nullptr;
         }
         dist[src] = 0;
     }
@@ -170,8 +174,8 @@ public:
 
     void print_shortest_path_data(int src, int dest, algo a, queueType qType)
     {
-        if (a == DIJKSTRA)
-            dijkstra(src, qType);
+        // if (a == DIJKSTRA)
+        //     dijkstra(src, qType);
 
         std::cout << "src: " << src << ", dest: " << dest << "\n";
         std::cout << "vertex\tparent\tcost\n";
@@ -194,41 +198,82 @@ void graph::dijkstra(int src, queueType qType)
     // min priority queue of  <distance, vertex>
     // access: pq->top().second = vertex, .first = distance to that vertex from src;
     // always the least distanced vertex from source will be at top
+
+    // std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int>>, std::greater<std::pair<int, int>>> pq;
     my_priority_queue *pq;
 
     if (qType == FIBONACCI)
     {
-        pq = new fibonacci_heap();
+        fibonacci_heap *pq1 = new fibonacci_heap();
+
+        // src in queue
+        // ndList[src] = pq1->insert(mp(dist[src], src));
+
+        // all vertices in queue
+        for (int i = 0; i < ver; i++)
+        {
+            ndList[i] = pq1->insert(mp(dist[i], i));
+        }
+
+        while (!pq1->empty())
+        {
+            // if (pq1->top() == nullptr)
+            int u = pq1->top().second;
+            // O (lg n)
+            pq1->pop();
+           
+            // iterate over all adjacents, relax the edges going to adjacents from u
+            // directed graph, in total E times for loop iterates
+            // each edge is relaxed and pushed to queue if allowed
+            for (auto vertex : adj_list[u])
+            {
+                // relaxation step, and we update pq too
+                int v = vertex.first, w = vertex.second;
+
+                if (ndList[v] != nullptr)
+                {
+
+                    if (ndList[u]->item.first != INF &&
+                        ndList[v]->item.first > ndList[u]->item.first + w)
+                    {
+                        // this edge can be relaxed and the vertex v can be put in queue
+                        pq1->decrease_key(ndList[v], ndList[u]->item.first + w);
+                        dist[v] = dist[u] + w;
+                        predecessor[v] = u;
+
+                        // std::cout << ", changed value of: " << ndList[v]->item.second << ", "
+                        //           << ndList[v]->item.first << ", using key: " << ndList[u]->item.first + w << "\n";
+                    }
+                }
+            }
+        }
     }
     else
     {
         pq = new binary_pq();
-    }
-    // std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int>>, std::greater<std::pair<int, int>>> pq;
+        // src in queue
+        pq->push(mp(dist[src], src));
 
-    // src in queue
-    pq->push(mp(dist[src], src));
-
-    // total V times the while loop iterates
-    while (!pq->empty())
-    {
-        // O(lg V)
-        int u = pq->top().second;
-        pq->pop();
-        
-        // iterate over all adjacents, relax the edges going to adjacents from u
-        // directed graph, in total E times for loop iterates
-        // each edge is relaxed and pushed to queue if allowed
-        for (auto vertex : adj_list[u])
+        // total V times the while loop iterates
+        while (!pq->empty())
         {
-            // relaxation step, and we update pq too
-            int v = vertex.first, w = vertex.second;
-            if (dist[u] != INF && dist[v] > dist[u] + w)
+            // O(lg V)
+            int u = pq->top().second;
+            pq->pop();
+            // iterate over all adjacents, relax the edges going to adjacents from u
+            // directed graph, in total E times for loop iterates
+            // each edge is relaxed and pushed to queue if allowed
+            for (auto vertex : adj_list[u])
             {
-                // this edge can be relaxed and the vertex v can be put in queue
-                dist[v] = dist[u] + w;
-                predecessor[v] = u;
-                pq->push(mp(dist[v], v));
+                // relaxation step, and we update pq too
+                int v = vertex.first, w = vertex.second;
+                if (dist[u] != INF && dist[v] > dist[u] + w)
+                {
+                    // this edge can be relaxed and the vertex v can be put in queue
+                    dist[v] = dist[u] + w;
+                    predecessor[v] = u;
+                    pq->push(mp(dist[v], v));
+                }
             }
         }
     }

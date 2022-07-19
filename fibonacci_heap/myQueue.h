@@ -16,7 +16,7 @@ private:
 public:
     my_priority_queue() {}
     virtual void clear() = 0;
-    virtual void push(const std::pair<int, int> &item) = 0;
+    virtual void *push(const std::pair<int, int> &item) = 0;
     virtual std::pair<int, int> top() const = 0;
     virtual void pop() = 0;
     virtual bool empty() = 0;
@@ -76,7 +76,7 @@ public:
         delete[] arr;
         arr = new std::pair<int, int>[capacity];
     }
-    void push(const std::pair<int, int> &item) override
+    void *push(const std::pair<int, int> &item) override
     {
         // increase size and insert
         arr[++curr_pos] = item;
@@ -88,6 +88,7 @@ public:
             std::swap(arr[parent(it)], arr[it]);
             it = parent(it);
         }
+        return nullptr;
     }
     std::pair<int, int> top() const override
     {
@@ -110,7 +111,7 @@ public:
 
 class fibonacci_heap : public my_priority_queue
 {
-private:
+public:
     struct node
     {
         std::pair<int, int> item;
@@ -120,28 +121,61 @@ private:
         node *child;
         bool mark;
         int degree;
-        node() : item{}, right(nullptr), left(nullptr), parent(nullptr),
+
+        node() : item{}, right(this), left(this), parent(nullptr),
                  child(nullptr), mark(false), degree(0) {}
+
         node(const std::pair<int, int> &i, node *r = nullptr, node *l = nullptr,
              node *p = nullptr, node *c = nullptr)
-            : item(i), right(r), left(l),
-              parent(p), child(c), mark(false), degree(0) {}
+            : item(i), right(r), left(l), parent(p), child(c), mark(false), degree(0)
+        {
+            if (r == nullptr)
+                right = this;
+            if (l == nullptr)
+                left = this;
+        }
+
+        void print()
+        {
+            std::cout << "value: " << item.second << ", key: " << item.first << ", mark: " << mark << ", degree: " << degree << ", ";
+            if (right != nullptr)
+            {
+                std::cout << "right: " << right->item.second << ", " << right->item.first << ", ";
+            }
+            if (left != nullptr)
+            {
+
+                std::cout << "left: " << left->item.second << ", " << left->item.first;
+            }
+            std::cout << "\n";
+        }
     };
+
+private:
     node *Hmin;
     int Hn;
 
     void LINK(node *y, node *x)
     {
-        //remove y from the root list of H
+
+        // remove y from the root list of H
         y->right->left = y->left;
         y->left->right = y->right;
-        //make y a child of x, incrementing x : degree
-        y->parent = x;
-        y->left = x->child;
-        y->right = x->child->right;
-        x->right->left = y;
-        x->right = y;
-        
+        // make y a child of x, incrementing x : degree
+        if (x->child != nullptr)
+        {
+            y->parent = x;
+            y->left = x->child;
+            y->right = x->child->right;
+            x->child->right->left = y;
+            x->child->right = y;
+        }
+        else
+        {
+            x->child = y;
+            y->parent = x;
+            y->left = y->right = y;
+        }
         x->degree++;
 
         y->mark = false;
@@ -149,15 +183,38 @@ private:
 
     void CONSOLIDATE()
     {
-        int DHn = logPhi(Hn);
-        node *A[DHn] = {nullptr};
+        int DHn = floor(logPhi(Hn)) + 1;
+        node *A[DHn];
+        for (int i = 0; i < DHn; i++)
+            A[i] = nullptr;
 
         // for each node w in the root list of H
         node *r = Hmin;
-        node *next = r->right;
+        node *next = r;
+
+        // first count and put them on a array
+        int t = 0;
         do
         {
-            node *x = r;
+            t++;
+            next = next->right;
+        } while (r != next);
+
+        node *container[t];
+
+        int i = 0;
+        next = r;
+
+        do
+        {
+            container[i++] = next;
+            next = next->right;
+
+        } while (r != next);
+
+        for (i = 0; i < t; i++)
+        {
+            node *x = container[i];
             int d = x->degree;
 
             while (A[d] != nullptr)
@@ -165,27 +222,26 @@ private:
                 node *y = A[d];
 
                 if (x->item.first > y->item.first)
-                    std::swap(*x, *y);
+                    std::swap(x, y);
 
                 LINK(y, x);
+
                 A[d] = nullptr;
                 d++;
             }
             A[d] = x;
-            
-            r = next;
-            next = next->right;
-
-        } while (next != r);
+        }
 
         Hmin = nullptr;
-        for (int i = 0; i < logPhi(Hn); i++)
+
+        for (int i = 0; i < DHn; i++)
         {
             if (A[i] != nullptr)
             {
                 if (Hmin == nullptr)
                 {
                     Hmin = A[i];
+                    A[i]->right = A[i]->left = A[i];
                 }
                 else
                 {
@@ -202,20 +258,62 @@ private:
         }
     }
 
+    void CUT(node *x, node *y)
+    {
+        // remove x from the child list of y, decrementing y:degree
+        if (x->right == x && x->left == x)
+            y->child = nullptr;
+        else
+            y->child = x->right;
+
+        x->right->left = x->left;
+        x->left->right = x->right;
+
+        y->degree--;
+
+        // add x to the root list of H, right of Hmin
+        x->left = Hmin;
+        x->right = Hmin->right;
+        Hmin->right->left = x;
+        Hmin->right = x;
+
+        x->parent = nullptr;
+        x->mark = false;
+    }
+
+    void CASCADING_CUT(node *y)
+    {
+        node *z = y->parent;
+
+        if (z != nullptr)
+        {
+            if (y->mark == false)
+                y->mark = true;
+            else
+            {
+                CUT(y, z);
+                CASCADING_CUT(z);
+            }
+        }
+    }
+
 public:
     fibonacci_heap() : Hmin(new node()), Hn(0) {} // MAKE-FIB-HEAP
 
     ~fibonacci_heap() {}
-    
+
     void clear() override {}
-    
-    void push(const std::pair<int, int> &item) override // FIB-HEAP-INSERT
+
+    void *push(const std::pair<int, int> &item) override { return nullptr; }
+
+    node *insert(const std::pair<int, int> &item) // FIB-HEAP-INSERT
     {
         node *toInsert = new node(item);
         if (!Hn)
         {
             // there is hmin, so change it to toInsert
             Hmin = toInsert;
+            Hmin->left = Hmin->right = Hmin;
         }
         else
         {
@@ -231,49 +329,102 @@ public:
         }
 
         Hn++;
+        return toInsert;
     }
-    
+
+    /*
+     *@brief    returns nullptr for empty heap, should check with empty() before calling it
+     */
     std::pair<int, int> top() const override
     { // MINIMUM
+        // std::cout << "Hn: " << Hn << "\n";
+        // if (Hmin == nullptr)
+        //     std::cout << "ERROR: heap empty.\n";
+        // else
+        //     std::cout << "returning: " << Hmin->item.second << ", " << Hmin->item.first << "\n";
         return Hmin->item;
     }
-    
+
     void pop() override
     { // FIB-HEAP-EXTRACT-MIN
         node *z = Hmin;
-        if (Hn)
-        {
-            // for each child of z, add them to root list
-            node *kid = z->child;
-            node *next = kid->right;
-            do
-            {
 
-                kid->left->right = kid->right; // step 1: removed kid
-                kid->right->left = kid->left;
-                kid->right = Hmin->right; // step 2: kid has two new side node
-                kid->left = Hmin;
-                Hmin->right->left = kid; // step 3: kid's side nodes now have kid
-                Hmin->right = kid;
-                kid->parent = nullptr; // step 4
-                // proceed pointer
-                kid = next;
-                next = next->right;
-            } while (next != kid);
+        if (Hn > 0)
+        {
+            // std::cout << "@HN : " << Hn << ", popping :" << z->item.second << ", " << z->item.first << "\n";
+            // z->print();
+            // z->left->print();
+            // z->right->print();
+            // std::cout << "====================================================\n";
+            // // for each child of z, add them to root list
+            int tc = 0;
+            if (z->child != nullptr)
+            {
+                node *kid = z->child;
+                node *nextKid = kid;
+
+                for (int i = 0; i < z->degree; i++)
+                {
+                    node *temp = nextKid;
+                    // proceed pointer
+                    nextKid = nextKid->right;
+                    // move this child to root list
+                    // temp->left->right = temp->right; // step 1: removed temp
+                    // temp->right->left = temp->left;
+                    temp->right = Hmin->right; // step 2: temp has two new side node
+                    temp->left = Hmin;
+                    Hmin->right->left = temp; // step 3: temp's side nodes now have temp
+                    Hmin->right = temp;
+                    temp->parent = nullptr; // step 4
+
+                    tc++;
+                }
+            }
 
             // remove z from root list
             z->right->left = z->left; // z's neighbours have lost z;
             z->left->right = z->right;
 
-            if (z->right == z)
+            if (z->right == z) // big mistakes here
+            {
                 Hn = 0;
+            }
             else
             {
+                z->right->left = z->left; // removing z = Hmin from root list
+                z->left->right = z->right;
                 Hmin = z->right;
+
                 CONSOLIDATE();
             }
+            Hn--;
         }
     }
-    
-    bool empty() override { return Hn; }
+
+    bool empty() override
+    {
+        // std::cout << "Hn now: " << Hn << "\n";
+        return Hn <= 0;
+    }
+
+    void decrease_key(node *x, int k) // FIB-HEAP-DECREASE-KEY
+    {
+
+        if (k > x->item.first)
+            std::cout << "Given key k: " << k << " larger than existing key for node: " << x->item.second << ", " << x->item.first << "\n";
+        else
+        {
+            x->item.first = k;
+            node *y = x->parent;
+
+            if (y != nullptr && x->item.first < y->item.first)
+            {
+                CUT(x, y);
+                CASCADING_CUT(y);
+            }
+
+            if (x->item.first < Hmin->item.first)
+                Hmin = x;
+        }
+    }
 };
