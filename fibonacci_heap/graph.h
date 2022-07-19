@@ -109,7 +109,7 @@ private:
             curr = predecessor[curr];
         }
 
-        path.push_back(src);
+        // path.push_back(src);
 
         return path.size();
     }

@@ -25,6 +25,7 @@ int main()
     {
         inputstream >> u >> v >> w;
         G.add_edge(u, v, w);
+        G.add_edge(v, u, w);
     }
 
     // input file 2 redirect
