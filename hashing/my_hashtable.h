@@ -68,19 +68,19 @@ public:
     {
         for (int i = 0; i < n; i++)
             table[i] = new _entry("", -1); // empty slot
-        // if (mt == SEPARATE_CHAIN)
-        // {
-        //     llTable = new linked_list*[n];
-        //     for (int i = 0; i < n; i++)
-        //         llTable[i] = new linked_list();
-        // }
+        if (mt == SEPARATE_CHAIN)
+        {
+            llTable = new linked_list*[n];
+            for (int i = 0; i < n; i++)
+                llTable[i] = new linked_list();
+        }
     }
 
     ~my_hashtable() {}
 
     unsigned ll insert(std::string key, ll val)
     {
-        unsigned ll hash = hashcode(key);
+        unsigned ll hash = jenkins_hashcode(key);
         unsigned ll i = 0, j = 0;
         probes = 0;
 
@@ -127,13 +127,13 @@ public:
         }
         else
         {
-            // hash = hash_fun1(hash, n);
+            hash = hash_fun1(hash, n);
 
-            // if (llTable[hash]->get_curr() == "")
-            // {
-            //     llTable[hash] = new linked_list();
-            // }
-            // llTable[hash]->insert(key, val);
+            if (llTable[hash]->get_curr() == "")
+            {
+                llTable[hash] = new linked_list();
+            }
+            llTable[hash]->insert(key, val);
         }
 
         if (mt != SEPARATE_CHAIN)
@@ -146,12 +146,12 @@ public:
     {
         if (mt == SEPARATE_CHAIN)
         {
-            // unsigned ll hash = hash_fun1(jenkins_hashcode(key), n);
+            unsigned ll hash = hash_fun1(jenkins_hashcode(key), n);
 
-            // if (llTable[hash]->get_curr() == "")
-            //     return;
+            if (llTable[hash]->get_curr() == "")
+                return;
             
-            // llTable[hash]->remove(key);
+            llTable[hash]->remove(key);
         }
         else
         {
@@ -166,7 +166,7 @@ public:
 
     ll search(std::string key)
     {
-        unsigned ll hash = (hashcode(key));
+        unsigned ll hash = (jenkins_hashcode(key));
         ll res = -1;
         unsigned ll i = 0, j = 0;
         probes = 0;
@@ -209,9 +209,9 @@ public:
         }
         else
         {
-            // j = hash_fun1(hash, n);
-            // if (llTable[j]->search(key))
-            //     res = j;
+            j = hash_fun1(hash, n);
+            if (llTable[j]->search(key))
+                res = j;
         }
         if (mt != SEPARATE_CHAIN && table[j].key == key)
         {
@@ -291,7 +291,7 @@ unsigned ll hashcode(std::string k)
 unsigned ll jenkins_hashcode(std::string k)
 {
     int l = k.length();
-    unsigned ll hash = 0;
+    ll hash = 0;
 
     for (int i = 0; i < l; i++)
     {
@@ -302,7 +302,7 @@ unsigned ll jenkins_hashcode(std::string k)
     hash += hash << 3;
     hash ^= hash >> 11;
     hash += hash << 15;
-    return hash >= 0 ? hash : -hash;
+    return hash >= 0 ? hash : -hash ;
 }
 
 unsigned ll hash_fun1(ll k, ll mod)
