@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <tuple>
 #include <cmath>
+#include <queue>
 
 //----------------------DEBUGGER---------------------//
 
@@ -74,13 +75,122 @@ void _print(T t, V... v)
 
 namespace dsa2
 {
-    ll r, c, n;
-    ll bound(ll **mat);
-    int run();
+    class matrix
+    {
+    private:
+        /* data */
+        ll **mat;
+        ll sz;
+        ll r;
+        ll c;
+        ll b;
+        ll level;
+        ll order;
+
+    public:
+        matrix(ll, ll);
+        ~matrix();
+        void input();
+        void print();
+        ll **getMat() { return mat; }
+        ll getSz() const { return sz; }
+        ll getR() const { return r; }
+        ll getC() const { return c; }
+        ll getB() const { return b; }
+        ll getLevel() const { return level; }
+        ll getOrder() const { return order; }
+        void setB(ll bnd) { b = bnd; }
+        void setLevel(ll lvl) { level = lvl; }
+        void setOrder(ll ord) { order = ord; }
+        void setR(ll fr) { r = fr; }
+        void setC(ll fc) { c = fc; }
+        void setMatrix(ll **);
+        void setMatrix(ll **, ll, ll, bool);
+        friend bool operator<(const dsa2::matrix &lhs, const dsa2::matrix &rhs);
+    };
+
+    matrix::matrix(ll sz, ll ord) : sz(sz), r(0), c(0), b(0), level(0), order(ord)
+    {
+        mat = new ll *[sz];
+        for (ll i = 0; i < sz; i++)
+            mat[i] = new ll[sz];
+    }
+
+    matrix::~matrix()
+    {
+        for (ll i = 0; i < sz; i++)
+            delete[] mat[i];
+        delete[] mat;
+    }
+
+    void matrix::input()
+    {
+        for (ll i = 0; i < sz; i++)
+            for (ll j = 0; j < sz; j++)
+            {
+                char c;
+                std::cin >> c;
+                mat[i][j] = c == 'X' ? 1 : 0;
+            }
+    }
+
+    void matrix::print()
+    {
+        std::cout << b << '\n';
+        for (ll i = 0; i < sz; i++)
+        {
+            for (ll j = 0; j < sz; j++)
+                std::cout << mat[i][j];
+
+            std::cout << "\n";
+        }
+    }
+
+    void matrix::setMatrix(ll **mat)
+    {
+        for (ll i = 0; i < sz; i++)
+            for (ll j = 0; j < sz; j++)
+                this->mat[i][j] = mat[i][j];
+    }
+
+    void matrix::setMatrix(ll **mat, ll dest, ll src, bool isRow = true)
+    {
+        for (ll i = 0; i < sz; i++)
+            if (isRow)
+            {
+                this->mat[dest][i] = mat[src][i];
+            }
+            else
+            {
+                this->mat[i][dest] = mat[i][src];
+            }
+    }
+
+    bool operator<(const dsa2::matrix &lhs, const dsa2::matrix &rhs)
+    {
+        // lhs.setB(dsa2::bound(lhs.getMat(), lhs.getR(), lhs.getC()));
+        if (lhs.getB() > rhs.getB())
+            return true;
+        else if (lhs.getB() == rhs.getB())
+        {
+            if (lhs.getLevel() > rhs.getLevel())
+                return true;
+            else if (lhs.getLevel() == rhs.getLevel())
+            {
+                if (lhs.getOrder() > rhs.getOrder())
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    ll n;
+    ll bound(ll **mat, ll r, ll c);
+    dsa2::matrix run(dsa2::matrix pmat);
 
 } // namespace dsa2
 
-ll dsa2::bound(ll **mat)
+ll dsa2::bound(ll **mat, ll r, ll c)
 {
     // unfixed region bound is max of floor((count_of_1+1)/2)
     // rows:
@@ -94,6 +204,7 @@ ll dsa2::bound(ll **mat)
             if (mat[i][j])
                 r1++;
         }
+
         r1 = std::floor((r1 + 1) / 2);
         m1 = std::max(m1, r1);
     }
@@ -191,45 +302,81 @@ ll dsa2::bound(ll **mat)
     return std::max(m1, m2);
 }
 
-int dsa2::run()
+dsa2::matrix dsa2::run(dsa2::matrix pmat)
 {
-    return 0;
+    // special priority queue of matrices
+    std::priority_queue<dsa2::matrix> pq;
+    pq.push(pmat);
+
+    ll creation_order = 1;
+    while (true)
+    {
+        dsa2::matrix temp = pq.top();
+        pq.pop();
+        ll sz = temp.getSz(), fixedRow = temp.getR(), fixedCol = temp.getC();
+        ll **parentMat = temp.getMat();
+
+        if ((fixedCol == fixedRow) && (fixedCol = sz - 1))
+            return temp;
+
+        // branch, calculate bound, set ++order and level = p.level+1, push to pq
+        // row:
+        if (fixedCol == fixedRow)
+        {
+            for (ll remainingRow = fixedRow; remainingRow < sz; remainingRow++)
+            {
+                // create one branch and do the works
+                dsa2::matrix brMat(sz, ++creation_order);
+                brMat.setLevel(temp.getLevel() + 1);
+                brMat.setMatrix(parentMat);
+                // swap the column under change;
+                brMat.setMatrix(parentMat, fixedCol, remainingRow);
+                // put other columns in order
+                for (ll j = fixedCol + 1; j < sz; j++)
+                {
+                    if (j == remainingRow)
+                        continue;
+                    brMat.setMatrix(parentMat, j, j, false);
+                }
+                brMat.setR(++fixedRow);
+                brMat.setB(dsa2::bound(brMat.getMat(), brMat.getR(), brMat.getC()));
+                pq.push(brMat);
+            }
+        }
+        else // col:
+        {
+            for (ll remainingCol = fixedCol; remainingCol < sz; remainingCol++)
+            {
+                dsa2::matrix brMat(sz, ++creation_order);
+                brMat.setLevel(temp.getLevel() + 1);
+                brMat.setMatrix(parentMat);
+                // swap the column under change;
+                brMat.setMatrix(parentMat, fixedCol, remainingCol, false);
+                // put other columns in order
+                for (ll j = fixedCol + 1; j < sz; j++)
+                {
+                    if (j == remainingCol)
+                        continue;
+                    brMat.setMatrix(parentMat, j, j, false);
+                }
+                brMat.setC(++fixedCol);
+                brMat.setB(dsa2::bound(brMat.getMat(), brMat.getR(), brMat.getC()));
+                pq.push(brMat);
+            }
+        }
+    }
 }
 
 int main()
 {
     std::cin >> dsa2::n;
 
-    ll **mat = new ll *[dsa2::n];
-    for (ll i = 0; i < dsa2::n; i++)
-        mat[i] = new ll[dsa2::n];
-
-    for (ll i = 0; i < dsa2::n; i++)
-        for (ll j = 0; j < dsa2::n; j++)
-        {
-            char c;
-            std::cin >> c;
-            mat[i][j] = c == 'X' ? 1 : 0;
-        }
-
-    std::cout << dsa2::bound(mat) << '\n';
-    ll state = dsa2::run();
-    if (state)
-    {
-        dsa2::r = 0, dsa2::c = 0;
-        ll b = dsa2::bound(mat);
-        std::cout << b << '\n';
-        for (ll i = 0; i < dsa2::n; i++)
-        {
-            for (ll j = 0; j < dsa2::n; j++)
-                std::cout << mat[i][j];
-
-            std::cout << "\n";
-        }
-    }
-
-    for (ll i = 0; i < dsa2::n; i++)
-        delete[] mat[i];
-    delete[] mat;
+    dsa2::matrix mat(dsa2::n, 1);
+    mat.input();
+    // dsa2::run(mat);
+    ll fr, fc;
+    std::cin >> fr >> fc;
+    std::cout << dsa2::bound(mat.getMat(), fr, fc) << '\n';
+    mat.print();
     return 0;
 }
