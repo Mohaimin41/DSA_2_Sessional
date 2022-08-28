@@ -1,77 +1,9 @@
 #include <iostream>
 #include <algorithm>
-#include <tuple>
 #include <cmath>
 #include <queue>
 
-//----------------------DEBUGGER---------------------//
-
-void __print(int x) { std::cerr << x; }
-void __print(long x) { std::cerr << x; }
-void __print(long long x) { std::cerr << x; }
-void __print(unsigned x) { std::cerr << x; }
-void __print(unsigned long x) { std::cerr << x; }
-void __print(unsigned long long x) { std::cerr << x; }
-void __print(float x) { std::cerr << x; }
-void __print(double x) { std::cerr << x; }
-void __print(long double x) { std::cerr << x; }
-void __print(char x) { std::cerr << '\'' << x << '\''; }
-void __print(const char *x) { std::cerr << '\"' << x << '\"'; }
-void __print(const std::string &x) { std::cerr << '\"' << x << '\"'; }
-void __print(bool x) { std::cerr << (x ? "true" : "false"); }
-
-template <typename T, typename V>
-void __print(const std::pair<T, V> &x)
-{
-    std::cerr << '{';
-    __print(x.first);
-    std::cerr << ',';
-    __print(x.second);
-    std::cerr << '}';
-}
-template <typename T, typename V, typename Z>
-void __print(const std::tuple<T, V, Z> &x)
-{
-    std::cerr << '{';
-    __print(std::get<0>(x));
-    std::cerr << ',';
-    __print(std::get<1>(x));
-    std::cerr << ',';
-    __print(std::get<2>(x));
-    std::cerr << '}';
-}
-template <typename T>
-void __print(const T &x)
-{
-    int f = 0;
-    std::cerr << '{';
-    for (auto &i : x)
-        std::cerr << (f++ ? "," : ""), __print(i);
-    std::cerr << "}";
-}
-void _print() { std::cerr << "]\n"; }
-template <typename T, typename... V>
-void _print(T t, V... v)
-{
-    __print(t);
-    if (sizeof...(v))
-        std::cerr << ", ";
-    _print(v...);
-}
-
-#ifdef LOCAL
-#define debug(x...)                    \
-    std::cerr << "[" << #x << "] = ["; \
-    _print(x)
-#else
-#define debug(x...)
-#endif
-
-//----------------------------Debugger End--------------------------//
-
 #define ll long long
-#define pb push_back
-#define mp make_pair
 
 namespace dsa2
 {
@@ -89,9 +21,10 @@ namespace dsa2
 
     public:
         matrix(ll, ll);
+        matrix(const dsa2::matrix &);
         ~matrix();
         void input();
-        void print();
+        void print() const;
         ll **getMat() { return mat; }
         ll getSz() const { return sz; }
         ll getR() const { return r; }
@@ -106,6 +39,7 @@ namespace dsa2
         void setC(ll fc) { c = fc; }
         void setMatrix(ll **);
         void setMatrix(ll **, ll, ll, bool);
+        dsa2::matrix &operator=(const dsa2::matrix &);
         friend bool operator<(const dsa2::matrix &lhs, const dsa2::matrix &rhs);
     };
 
@@ -114,6 +48,22 @@ namespace dsa2
         mat = new ll *[sz];
         for (ll i = 0; i < sz; i++)
             mat[i] = new ll[sz];
+    }
+
+    matrix::matrix(const dsa2::matrix &a)
+    {
+        this->b = a.b;
+        this->level = a.level;
+        this->order = a.order;
+        this->r = a.r;
+        this->c = a.c;
+        this->sz = a.sz;
+        this->mat = new ll *[this->sz];
+        for (ll i = 0; i < sz; i++)
+            mat[i] = new ll[this->sz];
+        for (ll i = 0; i < sz; i++)
+            for (ll j = 0; j < sz; j++)
+                this->mat[i][j] = a.mat[i][j];
     }
 
     matrix::~matrix()
@@ -134,14 +84,17 @@ namespace dsa2
             }
     }
 
-    void matrix::print()
+    void matrix::print() const
     {
         std::cout << b << '\n';
         for (ll i = 0; i < sz; i++)
         {
             for (ll j = 0; j < sz; j++)
-                std::cout << mat[i][j];
-
+                // std::cout << (mat[i][j] == 1) ? 'X' : 'O';
+                if (this->mat[i][j])
+                    std::cout << 'X' << ' ';
+                else
+                    std::cout << 'O' << ' ';
             std::cout << "\n";
         }
     }
@@ -156,6 +109,7 @@ namespace dsa2
     void matrix::setMatrix(ll **mat, ll dest, ll src, bool isRow = true)
     {
         for (ll i = 0; i < sz; i++)
+        {
             if (isRow)
             {
                 this->mat[dest][i] = mat[src][i];
@@ -164,24 +118,34 @@ namespace dsa2
             {
                 this->mat[i][dest] = mat[i][src];
             }
+        }
+    }
+
+    dsa2::matrix &matrix::operator=(const dsa2::matrix &a)
+    {
+        this->b = a.b;
+        this->level = a.level;
+        this->order = a.order;
+        this->r = a.r;
+        this->c = a.c;
+        this->sz = a.sz;
+        this->mat = new ll *[this->sz];
+        for (ll i = 0; i < sz; i++)
+            mat[i] = new ll[this->sz];
+        for (ll i = 0; i < sz; i++)
+            for (ll j = 0; j < sz; j++)
+                this->mat[i][j] = a.mat[i][j];
+        return *this;
     }
 
     bool operator<(const dsa2::matrix &lhs, const dsa2::matrix &rhs)
     {
-        // lhs.setB(dsa2::bound(lhs.getMat(), lhs.getR(), lhs.getC()));
-        if (lhs.getB() > rhs.getB())
-            return true;
+        if (lhs.getB() == rhs.getB() && lhs.getLevel() == rhs.getLevel())
+            return lhs.getOrder() > rhs.getOrder();
         else if (lhs.getB() == rhs.getB())
-        {
-            if (lhs.getLevel() > rhs.getLevel())
-                return true;
-            else if (lhs.getLevel() == rhs.getLevel())
-            {
-                if (lhs.getOrder() > rhs.getOrder())
-                    return true;
-            }
-        }
-        return false;
+            return lhs.getLevel() < lhs.getLevel();
+        else
+            return lhs.getB() > rhs.getB();
     }
 
     ll n;
@@ -306,42 +270,53 @@ dsa2::matrix dsa2::run(dsa2::matrix pmat)
 {
     // special priority queue of matrices
     std::priority_queue<dsa2::matrix> pq;
+
+    pmat.setB(dsa2::bound(pmat.getMat(), pmat.getR(), pmat.getC()));
+    pmat.setLevel(1);
+
     pq.push(pmat);
 
     ll creation_order = 1;
+
     while (true)
     {
         dsa2::matrix temp = pq.top();
         pq.pop();
         ll sz = temp.getSz(), fixedRow = temp.getR(), fixedCol = temp.getC();
-        ll **parentMat = temp.getMat();
 
-        if ((fixedCol == fixedRow) && (fixedCol = sz - 1))
+        if ((fixedCol == fixedRow) && (fixedCol == sz - 1))
             return temp;
 
         // branch, calculate bound, set ++order and level = p.level+1, push to pq
-        // row:
-        if (fixedCol == fixedRow)
+        if (fixedCol != fixedRow) // row
         {
             for (ll remainingRow = fixedRow; remainingRow < sz; remainingRow++)
             {
                 // create one branch and do the works
                 dsa2::matrix brMat(sz, ++creation_order);
                 brMat.setLevel(temp.getLevel() + 1);
-                brMat.setMatrix(parentMat);
-                // swap the column under change;
-                brMat.setMatrix(parentMat, fixedCol, remainingRow);
-                // put other columns in order
-                for (ll j = fixedCol + 1; j < sz; j++)
+                brMat.setMatrix(temp.getMat());
+
+                // swap the row under change;
+                brMat.setMatrix(temp.getMat(), fixedRow, remainingRow);
+
+                // put other rows in order
+                for (ll j = fixedRow + 1, i = fixedRow; j < sz; j++, i++)
                 {
-                    if (j == remainingRow)
+                    if (i == remainingRow)
+                    {
+                        i++;
                         continue;
-                    brMat.setMatrix(parentMat, j, j, false);
+                    }
+                    brMat.setMatrix(temp.getMat(), j, i, true);
                 }
-                brMat.setR(++fixedRow);
+
+                brMat.setR(1 + fixedRow), brMat.setC(fixedCol);
                 brMat.setB(dsa2::bound(brMat.getMat(), brMat.getR(), brMat.getC()));
+
                 pq.push(brMat);
             }
+            ++fixedRow;
         }
         else // col:
         {
@@ -349,20 +324,28 @@ dsa2::matrix dsa2::run(dsa2::matrix pmat)
             {
                 dsa2::matrix brMat(sz, ++creation_order);
                 brMat.setLevel(temp.getLevel() + 1);
-                brMat.setMatrix(parentMat);
+                brMat.setMatrix(temp.getMat());
+
                 // swap the column under change;
-                brMat.setMatrix(parentMat, fixedCol, remainingCol, false);
+                brMat.setMatrix(temp.getMat(), fixedCol, remainingCol, false);
+
                 // put other columns in order
-                for (ll j = fixedCol + 1; j < sz; j++)
+                for (ll j = fixedCol + 1, i = fixedCol; j < sz; j++, i++)
                 {
-                    if (j == remainingCol)
+                    if (i == remainingCol)
+                    {
+                        i++;
                         continue;
-                    brMat.setMatrix(parentMat, j, j, false);
+                    }
+                    brMat.setMatrix(temp.getMat(), j, i, false);
                 }
-                brMat.setC(++fixedCol);
+
+                brMat.setC(fixedCol + 1), brMat.setR(fixedRow);
                 brMat.setB(dsa2::bound(brMat.getMat(), brMat.getR(), brMat.getC()));
+
                 pq.push(brMat);
             }
+            ++fixedCol;
         }
     }
 }
@@ -371,12 +354,8 @@ int main()
 {
     std::cin >> dsa2::n;
 
-    dsa2::matrix mat(dsa2::n, 1);
-    mat.input();
-    // dsa2::run(mat);
-    ll fr, fc;
-    std::cin >> fr >> fc;
-    std::cout << dsa2::bound(mat.getMat(), fr, fc) << '\n';
-    mat.print();
+    dsa2::matrix pmat(dsa2::n, 1);
+    pmat.input();
+    dsa2::run(pmat).print();
     return 0;
 }
